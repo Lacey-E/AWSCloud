@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AWS Quiz Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #quiz-container {
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 50px;
+        }
+        .set-indicator {
+            background-color: #0066cc;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        h1 {
+            color: #0066cc;
+            text-align: center;
+        }
+        .question {
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .option {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #e9f2ff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .option:hover {
+            background-color: #d0e3ff;
+        }
+        .selected-correct {
+            background-color: #c3e6cb;
+        }
+        .selected-wrong {
+            background-color: #f8d7da;
+        }
+        .explanation {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-left: 5px solid #0066cc;
+            display: none;
+        }
+        .quiz-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0052a3;
+        }
+        #results {
+            text-align: center;
+            display: none;
+        }
+        #quiz {
+            display: none;
+        }
+        #start-screen {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-container">
+        <!-- Start Screen -->
+        <div id="start-screen">
+            <h1>AWS Cloud Knowledge Quiz</h1>
+            <p>Test your AWS knowledge with this complete 30-question quiz (3 sets of 10 questions)!</p>
+            <p><strong>Complete all 3 sets to finish the session!</strong></p>
+            <button id="start-button">Start Quiz</button>
+        </div>
+
+        <!-- Quiz Section -->
+        <div id="quiz">
+            <div class="set-indicator" id="set-indicator">Set 1 of 3</div>
+            <div id="progress">Question 1 of 10</div>
+            <div id="score">Score: 0</div>
+            <div id="question" class="question"></div>
+            <div id="options"></div>
+            <div id="explanation" class="explanation"></div>
+            <div class="quiz-footer">
+                <button id="next-button" style="display:none;">Next Question</button>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results">
+            <h1>Quiz Complete!</h1>
+            <p>Your final score: <span id="final-score">0</span>/30</p>
+            <button id="restart-button">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Quiz questions array
+        const questions = [
+            {
+                question: "Which AWS service is primarily used for Infrastructure as Code (IaC) deployment?",
+                options: ["AWS Lambda", "AWS CloudFormation", "Amazon EC2", "AWS Elastic Beanstalk"],
+                answer: 1,
+                explanation: "AWS CloudFormation is the primary service for Infrastructure as Code deployment in AWS."
+            },
+            {
+                question: "What is the purpose of AWS CodeDeploy?",
+                options: ["To build and test code in a CI/CD pipeline", "To automate code deployments to various compute services", "To store source code in private Git repositories", "To monitor application performance after deployment"],
+                answer: 1,
+                explanation: "AWS CodeDeploy automates code deployments to various compute services like EC2, Lambda, and on-premises servers."
+            },
+            {
+                question: "Which deployment pattern involves releasing a new version to a small subset of users before full deployment?",
+                options: ["Blue/Green deployment", "Canary deployment", "Rolling deployment", "In-place deployment"],
+                answer: 1,
+                explanation: "Canary deployment involves releasing a new version to a small subset of users to test before full deployment."
+            },
+            {
+                question: "In a Blue/Green deployment model, what happens to the old environment after successful cutover?",
+                options: ["It is immediately terminated", "It is kept running indefinitely", "It is kept as a backup for quick rollback", "It is automatically scaled down to minimum capacity"],
+                answer: 2,
+                explanation: "In Blue/Green deployment, the old environment is typically kept as a backup for quick rollback."
+            },
+            {
+                question: "Which AWS service automatically distributes incoming application traffic across multiple targets?",
+                options: ["Amazon CloudFront", "AWS Direct Connect", "Elastic Load Balancing", "Amazon Route 53"],
+                answer: 2,
+                explanation: "Elastic Load Balancing automatically distributes incoming application traffic across multiple targets."
+            },
+            {
+                question: "What AWS feature allows you to create isolated environments within a single AWS account?",
+                options: ["Availability Zones", "Virtual Private Clouds (VPCs)", "Security Groups", "Edge Locations"],
+                answer: 1,
+                explanation: "Virtual Private Clouds (VPCs) allow you to create isolated network environments within your AWS account."
+            },
+            {
+                question: "Which AWS service provides a fully managed deployment service that automates software deployments to a variety of compute services?",
+                options: ["AWS CodePipeline", "AWS CodeBuild", "AWS CodeDeploy", "AWS CodeCommit"],
+                answer: 2,
+                explanation: "AWS CodeDeploy is a fully managed deployment service that automates software deployments to a variety of compute services."
+            },
+            {
+                question: "What is the purpose of an Auto Scaling group in AWS?",
+                options: ["To automatically upgrade instance types when new ones become available", "To automatically scale the number of instances based on demand", "To distribute traffic evenly across Availability Zones", "To automatically back up EC2 instances"],
+                answer: 1,
+                explanation: "Auto Scaling groups automatically adjust the number of instances based on demand to maintain performance."
+            },
+            {
+                question: "Which AWS service would you use to containerize applications, create repositories, and run containers?",
+                options: ["Amazon Elastic Container Service (ECS)", "AWS Lambda", "Amazon DynamoDB", "AWS Elastic Beanstalk"],
+                answer: 0,
+                explanation: "Amazon Elastic Container Service (ECS) is a fully managed container orchestration service."
+            },
+            {
+                question: "Which AWS service allows you to monitor and collect operational data in the form of logs, metrics, and events?",
+                options: ["AWS CloudTrail", "Amazon CloudWatch", "AWS Config", "Amazon Inspector"],
+                answer: 1,
+                explanation: "Amazon CloudWatch monitors applications, collects performance data, and provides insights."
+            },
+            {
+                question: "What is the AWS service that provides identity and access management for your AWS resources?",
+                options: ["Amazon GuardDuty", "AWS Identity and Access Management (IAM)", "Amazon Inspector", "AWS Security Hub"],
+                answer: 1,
+                explanation: "AWS IAM enables you to manage access to AWS services and resources securely."
+            },
+            {
+                question: "Which AWS security principle recommends giving users the minimum level of access required to perform their job functions?",
+                options: ["Separation of Duties", "Defense in Depth", "Principle of Least Privilege", "Zero Trust Model"],
+                answer: 2,
+                explanation: "The Principle of Least Privilege recommends giving users only the permissions they need."
+            },
+            {
+                question: "What is the primary purpose of AWS Security Groups?",
+                options: ["They encrypt data in transit", "They act as virtual firewalls that control traffic to AWS resources", "They monitor for unauthorized API calls", "They manage user permissions"],
+                answer: 1,
+                explanation: "AWS Security Groups act as virtual firewalls controlling inbound and outbound traffic."
+            },
+            {
+                question: "Which AWS service provides continuous monitoring and recording of API calls for your account?",
+                options: ["Amazon CloudWatch", "AWS CloudTrail", "AWS Config", "Amazon GuardDuty"],
+                answer: 1,
+                explanation: "AWS CloudTrail provides governance, compliance, and audit for your AWS account."
+            },
+            {
+                question: "According to the AWS Shared Responsibility Model, which of the following is a customer responsibility?",
+                options: ["Physical security of AWS data centers", "Patching the hypervisor", "Configuring IAM roles and permissions", "Maintaining AWS global infrastructure"],
+                answer: 2,
+                explanation: "Under the AWS Shared Responsibility Model, configuring IAM roles and permissions is the customer's responsibility."
+            },
+            {
+                question: "Which AWS IAM feature allows temporary access to AWS resources without requiring long-term access keys?",
+                options: ["IAM Users", "IAM Groups", "IAM Roles", "IAM Policies"],
+                answer: 2,
+                explanation: "IAM Roles provide temporary credentials for applications or services."
+            },
+            {
+                question: "What AWS service helps you protect your web applications from common web exploits?",
+                options: ["AWS Shield", "Amazon Inspector", "AWS WAF (Web Application Firewall)", "Amazon Macie"],
+                answer: 2,
+                explanation: "AWS WAF helps protect web applications from common web exploits."
+            },
+            {
+                question: "Which compliance program is specifically designed for cloud service providers storing healthcare information?",
+                options: ["PCI DSS", "HIPAA Compliance Program", "SOC 2", "GDPR"],
+                answer: 1,
+                explanation: "The HIPAA Compliance Program is specifically designed for organizations handling protected healthcare information."
+            },
+            {
+                question: "What is the best way to grant an EC2 instance permissions to access Amazon S3 buckets?",
+                options: ["Create an IAM user and store access keys on the instance", "Use an IAM role attached to the EC2 instance", "Enable public access to the S3 bucket", "Use a security group to control access"],
+                answer: 1,
+                explanation: "Using an IAM role attached to the EC2 instance is the most secure way to grant permissions."
+            },
+            {
+                question: "Which of the following statements about AWS IAM policies is TRUE?",
+                options: ["IAM policies can only be attached to IAM users", "IAM policies define permissions for services but not for users", "IAM policies are documents that define permissions to AWS resources", "IAM policies can only be created using AWS CloudFormation"],
+                answer: 2,
+                explanation: "IAM policies are JSON documents that define permissions to AWS resources."
+            },
+            {
+                question: "Which AWS pricing model allows you to commit to a consistent amount of usage for a 1 or 3 year period in exchange for a significant discount?",
+                options: ["Spot Instances", "Reserved Instances (RI)", "On-Demand Instances", "Dedicated Hosts"],
+                answer: 1,
+                explanation: "Reserved Instances provide a significant discount in exchange for a commitment to a consistent amount of usage."
+            },
+            {
+                question: "What is the AWS service that provides object storage with industry-leading scalability, availability, security, and performance?",
+                options: ["Amazon EBS", "Amazon EFS", "Amazon S3", "Amazon FSx"],
+                answer: 2,
+                explanation: "Amazon S3 (Simple Storage Service) provides object storage with industry-leading scalability and performance."
+            },
+            {
+                question: "Which AWS storage service would be most appropriate for file system access needed by multiple EC2 instances simultaneously?",
+                options: ["Amazon S3", "Amazon EBS", "Amazon EFS", "AWS Storage Gateway"],
+                answer: 2,
+                explanation: "Amazon Elastic File System (EFS) provides a scalable file system for use with AWS cloud services."
+            },
+            {
+                question: "What AWS pricing calculator tool helps you estimate your monthly AWS bill and identify opportunities to reduce costs?",
+                options: ["AWS Cost Explorer", "AWS Budgets", "AWS Pricing Calculator", "AWS Trusted Advisor"],
+                answer: 2,
+                explanation: "AWS Pricing Calculator helps you estimate your monthly AWS bill and identify cost-reduction opportunities."
+            },
+            {
+                question: "Which of the following is NOT one of the main S3 storage classes?",
+                options: ["S3 Standard", "S3 Intelligent-Tiering", "S3 Flexible Storage", "S3 Glacier Deep Archive"],
+                answer: 2,
+                explanation: "S3 Flexible Storage is not a valid S3 storage class."
+            },
+            {
+                question: "What AWS cost management tool provides recommendations on how to optimize your AWS costs based on your usage patterns?",
+                options: ["AWS Cost Explorer", "AWS Pricing Calculator", "AWS Budgets", "AWS CloudTrail"],
+                answer: 0,
+                explanation: "AWS Cost Explorer provides recommendations on how to optimize your AWS costs based on usage patterns."
+            },
+            {
+                question: "Which AWS storage service is designed for block-level storage volumes that can be attached to EC2 instances?",
+                options: ["Amazon S3", "Amazon EBS", "Amazon EFS", "Amazon RDS Storage"],
+                answer: 1,
+                explanation: "Amazon Elastic Block Store (EBS) provides block-level storage volumes that can be attached to EC2 instances."
+            },
+            {
+                question: "What is the AWS concept of paying only for the exact amount of resources you actually use without any long-term commitments?",
+                options: ["Pay-as-you-go pricing model", "Save-as-you-commit model", "Reserved pricing model", "Enterprise discount program"],
+                answer: 0,
+                explanation: "The pay-as-you-go pricing model allows you to pay only for the resources you actually use without commitments."
+            },
+            {
+                question: "Which of the following is a benefit of the AWS Savings Plans?",
+                options: ["They offer higher discounts than On-Demand pricing", "They require no minimum commitment", "They are available only for storage services", "They can only be purchased for 5-year terms"],
+                answer: 0,
+                explanation: "AWS Savings Plans offer significant discounts compared to On-Demand pricing."
+            },
+            {
+                question: "For data that needs to be archived but may need to be retrieved within a few hours, which S3 storage class would be most cost-effective?",
+                options: ["S3 Standard", "S3 One Zone-Infrequent Access", "S3 Glacier Flexible Retrieval", "S3 Glacier Deep Archive"],
+                answer: 2,
+                explanation: "S3 Glacier Flexible Retrieval is designed for data that needs to be archived but may need to be retrieved within a few hours."
+            }
+        ];
+
+        // Quiz Variables
+        let currentQuestion = 0;
+        let score = 0;
+        let currentSet = 1;
+        let totalSets = 3;
+        let selectedQuestions = [];
+        let allSelectedQuestions = [];
+
+        // DOM Elements
+        const startScreen = document.getElementById('start-screen');
+        const quizSection = document.getElementById('quiz');
+        const resultsSection = document.getElementById('results');
+        const questionElement = document.getElementById('question');
+        const optionsElement = document.getElementById('options');
+        const explanationElement = document.getElementById('explanation');
+        const progressElement = document.getElementById('progress');
+        const scoreElement = document.getElementById('score');
+        const finalScoreElement = document.getElementById('final-score');
+        const nextButton = document.getElementById('next-button');
+        const startButton = document.getElementById('start-button');
+        const restartButton = document.getElementById('restart-button');
+
+        // Shuffle array function (Fisher-Yates algorithm)
+        function shuffleArray(array) {
+            let currentIndex = array.length;
+            let temporaryValue, randomIndex;
+
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex -= 1;
+
+                temporaryValue = array[currentIndex];
+                array[currentIndex] = array[randomIndex];
+                array[randomIndex] = temporaryValue;
+            }
+
+            return array;
+        }
+
+        // Start the quiz
+        function startQuiz() {
+            startScreen.style.display = 'none';
+            quizSection.style.display = 'block';
+            
+            // Reset quiz state
+            currentQuestion = 0;
+            score = 0;
+            currentSet = 1;
+            scoreElement.textContent = "Score: 0";
+            
+            // Shuffle all questions
+            const shuffledQuestions = shuffleArray([...questions]);
+            
+            // Split into 3 sets of 10 questions
+            allSelectedQuestions = [
+                shuffledQuestions.slice(0, 10),
+                shuffledQuestions.slice(10, 20),
+                shuffledQuestions.slice(20, 30)
+            ];
+            
+            // Set first set of questions
+            selectedQuestions = allSelectedQuestions[0];
+            
+            // Load first question
+            loadQuestion();
+        }
+
+        // Load question function
+        function loadQuestion() {
+            const question = selectedQuestions[currentQuestion];
+            
+            // Update progress
+            progressElement.textContent = `Set ${currentSet} of ${totalSets} - Question ${currentQuestion + 1} of 10`;
+            
+            // Display question
+            questionElement.textContent = question.question;
+            
+            // Clear previous options and explanation
+            optionsElement.innerHTML = '';
+            explanationElement.style.display = 'none';
+            nextButton.style.display = 'none';
+            
+            // Add options
+            question.options.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.textContent = option;
+                optionDiv.onclick = function() {
+                    selectOption(this, index, question.answer, question.explanation);
+                };
+                optionsElement.appendChild(optionDiv);
+            });
+        }
+
+        // Handle option selection
+        function selectOption(element, selectedIndex, correctIndex, explanation) {
+            // Prevent selecting another option
+            const options = document.querySelectorAll('.option');
+            options.forEach(option => {
+                option.onclick = null;
+            });
+            
+            // Check if answer is correct
+            if (selectedIndex === correctIndex) {
+                element.classList.add('selected-correct');
+                score++;
+                scoreElement.textContent = `Score: ${score}`;
+            } else {
+                element.classList.add('selected-wrong');
+                options[correctIndex].classList.add('selected-correct');
+            }
+            
+            // Show explanation
+            explanationElement.textContent = explanation;
+            explanationElement.style.display = 'block';
+            
+            // Show next button
+            nextButton.style.display = 'block';
+        }
+
+        // Next question function
+        function nextQuestion() {
+            currentQuestion++;
+            
+            if (currentQuestion < 10) {
+                // Next question in the current set
+                loadQuestion();
+            } else {
+                // Check if we have more sets
+                if (currentSet < totalSets) {
+                    // Move to next set
+                    currentSet++;
+                    currentQuestion = 0;
+                    selectedQuestions = allSelectedQuestions[currentSet - 1];
+                    
+                    // Show set transition message
+                    explanationElement.textContent = `Moving to Set ${currentSet} of ${totalSets}. You currently have ${score} points.`;
+                    explanationElement.style.display = 'block';
+                    
+                    // Change button text for set transition
+                    nextButton.textContent = "Start Next Set";
+                    
+                    // Change the next button's behavior for one click
+                    const originalNextFunction = nextButton.onclick;
+                    nextButton.onclick = function() {
+                        // Reset button text
+                        nextButton.textContent = "Next Question";
+                        // Reset onclick to original function
+                        nextButton.onclick = originalNextFunction;
+                        // Load the first question of the next set
+                        loadQuestion();
+                    };
+                } else {
+                    // All sets completed - show final results
+                    quizSection.style.display = 'none';
+                    resultsSection.style.display = 'block';
+                    finalScoreElement.textContent = score;
+                }
+            }
+        }
+
+        // Reset quiz
+        function resetQuiz() {
+            resultsSection.style.display = 'none';
+            startScreen.style.display = 'block';
+        }
+
+        // Event listeners
+        startButton.addEventListener('click', startQuiz);
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', resetQuiz);
+    </script>
+</body>
+</html>
